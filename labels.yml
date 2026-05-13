@@ -1,6 +1,6 @@
 # ------------------
 # Type (Required)
-# Blue palette → classification
+# Mixed palette → classification
 # ------------------
 - name: "type:bug"
   color: "df3d3d"
