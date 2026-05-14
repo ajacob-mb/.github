@@ -1,6 +1,9 @@
 name: Label Taxonomy
 
 on:
+  schedule:
+    - cron: "0 3 * * 1"  # Every Monday at 03:00 UTC
+
   workflow_dispatch:
     inputs:
       mode:
@@ -23,13 +26,41 @@ on:
           - stage2
           - all
 
+      dry_run:
+        description: "Preview changes without writing to repositories"
+        required: true
+        default: true
+        type: boolean
+
+      enforce_confirmation:
+        description: "Required only for enforce mode; enter ENFORCE"
+        required: false
+        default: ""
+        type: string
+
+      taxonomy_version:
+        description: "Optional taxonomy version override (defaults to taxonomy-version.json)"
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  group: label-taxonomy-${{ github.repository }}-${{ inputs.stage || 'all' }}-${{ inputs.mode || 'enforce' }}
+  cancel-in-progress: false
+
 env:
-  MODE: ${{ inputs.mode }}
-  STAGE: ${{ inputs.stage }}
+  MODE: ${{ inputs.mode || 'enforce' }}
+  STAGE: ${{ inputs.stage || 'all' }}
+  DRY_RUN: ${{ inputs.dry_run != '' && inputs.dry_run || 'false' }}
+  ENFORCE_CONFIRMATION: ${{ inputs.enforce_confirmation || 'ENFORCE' }}
+  TAXONOMY_VERSION_INPUT: ${{ inputs.taxonomy_version || '' }}
 
 jobs:
   labels:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
 
     steps:
       - name: Checkout repo
@@ -44,8 +75,18 @@ jobs:
           private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           installation_id: ${{ secrets.GH_INSTALLATION_ID }}
 
+      - name: Enforce mode confirmation guard
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'enforce' }}
+        shell: bash
+        run: |
+          if [ "${ENFORCE_CONFIRMATION}" != "ENFORCE" ]; then
+            echo "enforce mode requires enforce_confirmation=ENFORCE"
+            exit 1
+          fi
+
       # ✅ Main execution
       - name: Run Label Taxonomy
+        id: run-taxonomy
         uses: actions/github-script@v7
         with:
           github-token: ${{ steps.app-token.outputs.token }}
@@ -54,34 +95,132 @@ jobs:
 
             const MODE = process.env.MODE;
             const STAGE = process.env.STAGE;
+            const DRY_RUN = String(process.env.DRY_RUN).toLowerCase() === 'true';
+            const TAXONOMY_VERSION_INPUT = (process.env.TAXONOMY_VERSION_INPUT || '').trim();
+
+            let taxonomyVersion = TAXONOMY_VERSION_INPUT;
+            const versionFile = './.github/label-config/taxonomy-version.json';
+
+            if (!taxonomyVersion && fs.existsSync(versionFile)) {
+              const versionConfig = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
+              if (typeof versionConfig.version === 'string' && versionConfig.version.trim()) {
+                taxonomyVersion = versionConfig.version.trim();
+              }
+            }
+
+            if (!taxonomyVersion) {
+              taxonomyVersion = 'unversioned';
+            }
+
+            const PRIORITY_LABELS = new Set([
+              'priority: high',
+              'priority: medium',
+              'priority: low'
+            ]);
+
+            const TYPE_LABELS = new Set([
+              'type: bug',
+              'type: docs',
+              'type: feature',
+              'type: task'
+            ]);
+
+            const DEFAULT_PRIORITY_LABEL = 'priority: medium';
+            const DEFAULT_TYPE_LABEL = 'type: task';
+
+            const isPullRequest = (item) => Boolean(item.pull_request);
+
+            const issueHasAny = (labels, expected) => labels.some(label => expected.has(label));
+
+            const maybeApply = async (description, fn) => {
+              if (DRY_RUN) {
+                console.log(`[DRY-RUN] ${description}`);
+                return false;
+              }
+
+              await fn();
+              return true;
+            };
+
+            const listAllAccessibleRepositories = async () => {
+              const installationRepos = await github.paginate(
+                github.rest.apps.listReposAccessibleToInstallation,
+                { per_page: 100 }
+              );
+
+              return installationRepos.map(repo => `${repo.owner.login}/${repo.name}`);
+            };
+
+            const totals = {
+              labelsCreated: 0,
+              labelsUpdated: 0,
+              workItemsScanned: 0,
+              mappedLabelsAdded: 0,
+              defaultPriorityApplied: 0,
+              defaultTypeApplied: 0,
+              labelsDeleted: 0
+            };
+
+            const audit = {
+              timestampUtc: new Date().toISOString(),
+              mode: MODE,
+              stage: STAGE,
+              dryRun: DRY_RUN,
+              taxonomyVersion,
+              repositories: []
+            };
 
             console.log(`\n==============================`);
             console.log(`🚀 MODE: ${MODE}`);
             console.log(`📦 STAGE: ${STAGE}`);
+            console.log(`🧪 DRY RUN: ${DRY_RUN}`);
+            console.log(`🏷️ TAXONOMY VERSION: ${taxonomyVersion}`);
 
             // ✅ Load config files
-            const labels = JSON.parse(fs.readFileSync('./.github/label-config/labels.json'));
-            const mapping = JSON.parse(fs.readFileSync('./.github/label-config/label-mapping.json'));
-            const staging = JSON.parse(fs.readFileSync('./.github/label-config/staged-migration.json'));
+            const labels = JSON.parse(fs.readFileSync('./.github/label-config/labels.json', 'utf8'));
+            const mapping = JSON.parse(fs.readFileSync('./.github/label-config/label-mapping.json', 'utf8'));
+            const staging = JSON.parse(fs.readFileSync('./.github/label-config/staged-migration.json', 'utf8'));
+
+            const taxonomyNames = new Set(labels.map(l => l.name));
 
             // ✅ Validation (important!)
             if (!Array.isArray(labels)) {
               throw new Error("labels.json must be an array");
             }
 
-            if (typeof mapping !== 'object') {
-              throw new Error("label-mapping.json must be an object");
+            if (typeof mapping !== 'object' || mapping === null || Array.isArray(mapping)) {
+              throw new Error("label-mapping.json must be a non-null object");
             }
 
-            if (!staging[STAGE]) {
+            if (STAGE !== 'all' && !staging[STAGE]) {
               throw new Error(`Stage "${STAGE}" not found in staged-migration.json`);
             }
 
-            if (!Array.isArray(staging[STAGE])) {
+            if (STAGE !== 'all' && !Array.isArray(staging[STAGE])) {
               throw new Error(`Stage "${STAGE}" must be an array of repos`);
             }
 
-            const repos = staging[STAGE];
+            if (!taxonomyNames.has(DEFAULT_PRIORITY_LABEL)) {
+              throw new Error(`Required default priority label "${DEFAULT_PRIORITY_LABEL}" missing from labels.json`);
+            }
+
+            if (!taxonomyNames.has(DEFAULT_TYPE_LABEL)) {
+              throw new Error(`Required default type label "${DEFAULT_TYPE_LABEL}" missing from labels.json`);
+            }
+
+            let repos = [];
+
+            if (STAGE === 'all') {
+              console.log('🌐 Resolving all repositories accessible to this GitHub App installation');
+              repos = [...new Set(await listAllAccessibleRepositories())]
+                .sort((a, b) => a.localeCompare(b));
+            } else {
+              repos = staging[STAGE];
+            }
+
+            if (!Array.isArray(repos) || repos.length === 0) {
+              throw new Error(`No repositories resolved for stage "${STAGE}"`);
+            }
 
             console.log(`📁 TOTAL REPOS: ${repos.length}`);
             console.log(`📁 REPO LIST:`, repos);
@@ -92,6 +231,17 @@ jobs:
               console.log(`\n==============================`);
               console.log(`🔁 Processing ${repoFull}`);
 
+              const repoAudit = {
+                repo: repoFull,
+                labelsCreated: 0,
+                labelsUpdated: 0,
+                workItemsScanned: 0,
+                mappedLabelsAdded: 0,
+                defaultPriorityApplied: 0,
+                defaultTypeApplied: 0,
+                labelsDeleted: 0
+              };
+
               // ✅ Get existing labels
               const existing = await github.paginate(
                 github.rest.issues.listLabelsForRepo,
@@ -99,7 +249,6 @@ jobs:
               );
 
               const existingMap = new Map(existing.map(l => [l.name, l]));
-              const taxonomyNames = new Set(labels.map(l => l.name));
 
               // ============================
               // ✅ STEP 1 — Create / Update
@@ -107,15 +256,23 @@ jobs:
               for (const label of labels) {
 
                 if (!existingMap.has(label.name)) {
-                  console.log(`➕ Creating ${label.name}`);
+                  const applied = await maybeApply(
+                    `Create label ${label.name} in ${repoFull}`,
+                    async () => {
+                      await github.rest.issues.createLabel({
+                        owner,
+                        repo,
+                        name: label.name,
+                        color: label.color,
+                        description: label.description || ''
+                      });
+                    }
+                  );
 
-                  await github.rest.issues.createLabel({
-                    owner,
-                    repo,
-                    name: label.name,
-                    color: label.color,
-                    description: label.description || ''
-                  });
+                  if (applied || DRY_RUN) {
+                    repoAudit.labelsCreated += 1;
+                    totals.labelsCreated += 1;
+                  }
 
                 } else {
                   const existingLabel = existingMap.get(label.name);
@@ -124,15 +281,23 @@ jobs:
                     existingLabel.color !== label.color ||
                     (existingLabel.description || '') !== (label.description || '')
                   ) {
-                    console.log(`♻️ Updating ${label.name}`);
+                    const applied = await maybeApply(
+                      `Update label ${label.name} in ${repoFull}`,
+                      async () => {
+                        await github.rest.issues.updateLabel({
+                          owner,
+                          repo,
+                          name: label.name,
+                          color: label.color,
+                          description: label.description || ''
+                        });
+                      }
+                    );
 
-                    await github.rest.issues.updateLabel({
-                      owner,
-                      repo,
-                      name: label.name,
-                      color: label.color,
-                      description: label.description || ''
-                    });
+                    if (applied || DRY_RUN) {
+                      repoAudit.labelsUpdated += 1;
+                      totals.labelsUpdated += 1;
+                    }
                   }
                 }
               }
@@ -147,24 +312,75 @@ jobs:
                   { owner, repo, state: "all" }
                 );
 
-                console.log(`📄 Processing ${issues.length} issues`);
+                const scopedItems = issues.filter(item => !isPullRequest(item) || item.state === 'open');
 
-                for (const issue of issues) {
+                console.log(`📄 Processing ${scopedItems.length} work items (all issues + open PRs)`);
+
+                for (const issue of scopedItems) {
+                  repoAudit.workItemsScanned += 1;
+                  totals.workItemsScanned += 1;
+
                   const currentLabels = issue.labels.map(l => l.name);
+                  const labelsToAdd = new Set();
 
                   for (const oldLabel of currentLabels) {
                     if (mapping[oldLabel]) {
                       const newLabel = mapping[oldLabel];
 
                       if (!currentLabels.includes(newLabel)) {
-                        console.log(`➡️ Issue #${issue.number}: ${oldLabel} → ${newLabel}`);
+                        labelsToAdd.add(newLabel);
+                      }
+                    }
+                  }
 
+                  const simulatedLabels = [...new Set([...currentLabels, ...labelsToAdd])];
+
+                  if (MODE === "enforce" && !issueHasAny(simulatedLabels, PRIORITY_LABELS)) {
+                    labelsToAdd.add(DEFAULT_PRIORITY_LABEL);
+                    repoAudit.defaultPriorityApplied += 1;
+                    totals.defaultPriorityApplied += 1;
+                  }
+
+                  if (MODE === "enforce" && !issueHasAny(simulatedLabels, TYPE_LABELS)) {
+                    labelsToAdd.add(DEFAULT_TYPE_LABEL);
+                    repoAudit.defaultTypeApplied += 1;
+                    totals.defaultTypeApplied += 1;
+                  }
+
+                  if (labelsToAdd.size > 0) {
+                    const labelsToApply = [...labelsToAdd];
+
+                    const mappedCount = labelsToApply.filter(label =>
+                      ![DEFAULT_PRIORITY_LABEL, DEFAULT_TYPE_LABEL].includes(label)
+                    ).length;
+
+                    repoAudit.mappedLabelsAdded += mappedCount;
+                    totals.mappedLabelsAdded += mappedCount;
+
+                    const applied = await maybeApply(
+                      `Add labels [${labelsToApply.join(', ')}] to issue #${issue.number} in ${repoFull}`,
+                      async () => {
                         await github.rest.issues.addLabels({
                           owner,
                           repo,
                           issue_number: issue.number,
-                          labels: [newLabel]
+                          labels: labelsToApply
                         });
+                      }
+                    );
+
+                    if (!applied && !DRY_RUN) {
+                      repoAudit.mappedLabelsAdded -= mappedCount;
+                      totals.mappedLabelsAdded -= mappedCount;
+
+                      if (labelsToApply.includes(DEFAULT_PRIORITY_LABEL)) {
+                        repoAudit.defaultPriorityApplied -= 1;
+                        totals.defaultPriorityApplied -= 1;
+                      }
+
+                      if (labelsToApply.includes(DEFAULT_TYPE_LABEL)) {
+                        repoAudit.defaultTypeApplied -= 1;
+                        totals.defaultTypeApplied -= 1;
                       }
                     }
                   }
@@ -180,18 +396,67 @@ jobs:
 
                 for (const label of existing) {
                   if (!taxonomyNames.has(label.name)) {
-                    console.log(`🗑 Deleting ${label.name}`);
+                    const applied = await maybeApply(
+                      `Delete non-taxonomy label ${label.name} in ${repoFull}`,
+                      async () => {
+                        await github.rest.issues.deleteLabel({
+                          owner,
+                          repo,
+                          name: label.name
+                        });
+                      }
+                    );
 
-                    await github.rest.issues.deleteLabel({
-                      owner,
-                      repo,
-                      name: label.name
-                    });
+                    if (applied || DRY_RUN) {
+                      repoAudit.labelsDeleted += 1;
+                      totals.labelsDeleted += 1;
+                    }
                   }
                 }
               }
 
+              audit.repositories.push(repoAudit);
+
               console.log(`✅ Completed ${repoFull}`);
             }
 
+            audit.totals = totals;
+
+            fs.writeFileSync('label-taxonomy-audit.json', JSON.stringify(audit, null, 2));
+
+            const summaryLines = [
+              '## Label Taxonomy Audit',
+              '',
+              `- Mode: ${MODE}`,
+              `- Stage: ${STAGE}`,
+              `- Dry run: ${DRY_RUN}`,
+              `- Taxonomy version: ${taxonomyVersion}`,
+              `- Repositories: ${audit.repositories.length}`,
+              '',
+              '### Totals',
+              '',
+              `- Labels created: ${totals.labelsCreated}`,
+              `- Labels updated: ${totals.labelsUpdated}`,
+              `- Work items scanned: ${totals.workItemsScanned}`,
+              `- Mapped labels added: ${totals.mappedLabelsAdded}`,
+              `- Default priority applied: ${totals.defaultPriorityApplied}`,
+              `- Default type applied: ${totals.defaultTypeApplied}`,
+              `- Labels deleted: ${totals.labelsDeleted}`
+            ];
+
+            const stepSummary = process.env.GITHUB_STEP_SUMMARY;
+            if (stepSummary) {
+              fs.appendFileSync(stepSummary, `${summaryLines.join('\n')}\n`);
+            }
+
+            core.setOutput('audit-file', 'label-taxonomy-audit.json');
+            core.setOutput('taxonomy-version', taxonomyVersion);
+
             console.log(`\n✅✅ ALL DONE`);
+
+      - name: Upload audit artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: label-taxonomy-audit-${{ github.run_id }}
+          path: ${{ steps.run-taxonomy.outputs.audit-file }}
+          if-no-files-found: error
