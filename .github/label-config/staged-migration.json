@@ -6,11 +6,5 @@
   "stage2": [
     "ajacob-mb/Project_BMT",
     "ajacob-mb/GitHub-Issues-Demo"
-  ],
-  "all": [
-    "ajacob-mb/MergeDocToPDF",
-    "ajacob-mb/DocGenerator",
-    "ajacob-mb/Project_BMT",
-    "ajacob-mb/GitHub-Issues-Demo"
   ]
 }
