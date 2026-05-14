@@ -33,13 +33,7 @@ on:
         type: boolean
 
       enforce_confirmation:
-        description: "Required only for enforce mode; enter ENFORCE"
-        required: false
-        default: ""
-        type: string
-
-      taxonomy_version:
-        description: "Optional taxonomy version override (defaults to taxonomy-version.json)"
+        description: "Enforce mode only — leave blank for introduce/migrate. Type ENFORCE to confirm."
         required: false
         default: ""
         type: string
@@ -53,7 +47,6 @@ env:
   STAGE: ${{ inputs.stage || 'all' }}
   DRY_RUN: ${{ inputs.dry_run != '' && inputs.dry_run || 'false' }}
   ENFORCE_CONFIRMATION: ${{ inputs.enforce_confirmation || 'ENFORCE' }}
-  TAXONOMY_VERSION_INPUT: ${{ inputs.taxonomy_version || '' }}
 
 jobs:
   labels:
@@ -96,21 +89,6 @@ jobs:
             const MODE = process.env.MODE;
             const STAGE = process.env.STAGE;
             const DRY_RUN = String(process.env.DRY_RUN).toLowerCase() === 'true';
-            const TAXONOMY_VERSION_INPUT = (process.env.TAXONOMY_VERSION_INPUT || '').trim();
-
-            let taxonomyVersion = TAXONOMY_VERSION_INPUT;
-            const versionFile = './.github/label-config/taxonomy-version.json';
-
-            if (!taxonomyVersion && fs.existsSync(versionFile)) {
-              const versionConfig = JSON.parse(fs.readFileSync(versionFile, 'utf8'));
-              if (typeof versionConfig.version === 'string' && versionConfig.version.trim()) {
-                taxonomyVersion = versionConfig.version.trim();
-              }
-            }
-
-            if (!taxonomyVersion) {
-              taxonomyVersion = 'unversioned';
-            }
 
             const PRIORITY_LABELS = new Set([
               'priority: high',
@@ -166,7 +144,6 @@ jobs:
               mode: MODE,
               stage: STAGE,
               dryRun: DRY_RUN,
-              taxonomyVersion,
               repositories: []
             };
 
@@ -174,7 +151,6 @@ jobs:
             console.log(`🚀 MODE: ${MODE}`);
             console.log(`📦 STAGE: ${STAGE}`);
             console.log(`🧪 DRY RUN: ${DRY_RUN}`);
-            console.log(`🏷️ TAXONOMY VERSION: ${taxonomyVersion}`);
 
             // ✅ Load config files
             const labels = JSON.parse(fs.readFileSync('./.github/label-config/labels.json', 'utf8'));
@@ -430,7 +406,6 @@ jobs:
               `- Mode: ${MODE}`,
               `- Stage: ${STAGE}`,
               `- Dry run: ${DRY_RUN}`,
-              `- Taxonomy version: ${taxonomyVersion}`,
               `- Repositories: ${audit.repositories.length}`,
               '',
               '### Totals',
@@ -450,7 +425,6 @@ jobs:
             }
 
             core.setOutput('audit-file', 'label-taxonomy-audit.json');
-            core.setOutput('taxonomy-version', taxonomyVersion);
 
             console.log(`\n✅✅ ALL DONE`);
 
@@ -458,5 +432,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: label-taxonomy-audit-${{ github.run_id }}
-          path: ${{ steps.run-taxonomy.outputs.audit-file }}
+          path: label-taxonomy-audit.json
           if-no-files-found: error

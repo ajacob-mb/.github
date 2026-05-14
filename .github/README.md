@@ -20,7 +20,6 @@ This repository provides a centralised platform to standardise and enforce GitHu
 | `.github/label-config/labels.json` | Source of truth — all desired labels with name, color, and description |
 | `.github/label-config/label-mapping.json` | Maps legacy label names to their taxonomy equivalents |
 | `.github/label-config/staged-migration.json` | Defines `stage1` and `stage2` explicit repo lists for controlled rollout |
-| `.github/label-config/taxonomy-version.json` | Tracks the current taxonomy version and change notes |
 | `.github/workflows/label-taxonomy.yml` | Main workflow — introduce, migrate, enforce |
 
 ---
@@ -75,8 +74,7 @@ This repository provides a centralised platform to standardise and enforce GitHu
 | `mode` | Yes | `enforce` | Execution mode: `introduce`, `migrate`, or `enforce` |
 | `stage` | Yes | `all` | Rollout scope: `stage1`, `stage2`, or `all` |
 | `dry_run` | Yes | `false` | When `true`, logs all planned changes without writing anything |
-| `enforce_confirmation` | No (enforce only) | n/a | Must be set to `ENFORCE` when running enforce manually |
-| `taxonomy_version` | No | read from file | Override the version string written to the audit output |
+| `enforce_confirmation` | No | n/a | Enforce mode only — leave blank for introduce/migrate. Type `ENFORCE` to confirm. |
 
 ---
 
