@@ -1,5 +1,0 @@
-{
-  "version": "v1.2.1",
-  "updated": "2026-05-14",
-  "notes": "All stage targets repositories accessible to the GitHub App; enforce applies minimum type/priority to all issues and open PRs"
-}
