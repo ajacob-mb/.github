@@ -78,17 +78,7 @@ This repository provides a centralised platform to standardise and enforce GitHu
 
 ---
 
-## Scheduled Run
-
-The workflow runs automatically every **Monday at 03:00 UTC** in `enforce` mode across all app-accessible repositories with `dry_run=false`. No manual action is required once the initial rollout is complete.
-
-To pause the schedule, comment out the cron line in the workflow file and merge to the default branch.  
-To stop a run in progress, cancel it from the GitHub Actions UI.  
-To disable entirely, use the workflow disable toggle in the Actions tab.
-
----
-
-## Recommended Rollout Sequence
+## Recommended Manual Rollout Sequence
 
 1. `introduce` + `stage1` + `dry_run=true` — preview label creation
 2. `introduce` + `stage1` + `dry_run=false` — apply
@@ -96,7 +86,19 @@ To disable entirely, use the workflow disable toggle in the Actions tab.
 4. `migrate` + `stage1` + `dry_run=false` — apply
 5. Repeat steps 1–4 for `stage2`
 6. `enforce` + `all` + `dry_run=true` — preview full enforcement
-7. `enforce` + `all` + `dry_run=false` — apply; weekly schedule takes over from here
+7. `enforce` + `all` + `dry_run=false` — apply full manual enforcement across all app-accessible repositories
+
+---
+
+## Scheduled Enforcement
+
+The workflow runs automatically every **Monday at 03:00 UTC** in `enforce` mode across all app-accessible repositories with `dry_run=false` whenever the cron lines are enabled on the default branch.
+
+This is independent of manual runs. Running step 7 above does not enable schedule; schedule is already active whenever cron is enabled.
+
+To pause the schedule, comment out the cron line in the workflow file and merge to the default branch.  
+To stop a run in progress, cancel it from the GitHub Actions UI.  
+To disable entirely, use the workflow disable toggle in the Actions tab.
 
 ---
 
@@ -104,7 +106,7 @@ To disable entirely, use the workflow disable toggle in the Actions tab.
 
 Every run produces a `label-taxonomy-audit.json` artifact attached to the workflow run. It includes:
 
-- Run timestamp, mode, stage, dry-run flag, and taxonomy version
+- Run timestamp, mode, stage, and dry-run flag
 - Per-repository counts: labels created, updated, deleted, work items scanned, mapped labels added, defaults applied
 - Aggregate totals across all repositories
 
