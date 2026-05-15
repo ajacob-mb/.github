@@ -1,6 +1,9 @@
 name: Label Taxonomy
 
 on:
+  schedule:
+    - cron: "*/15 * * * *"  # Every 15 minutes (temporary test schedule)
+
   # schedule:
   #   - cron: "0 3 * * 1"  # Every Monday at 03:00 UTC
 
