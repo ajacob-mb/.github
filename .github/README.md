@@ -8,7 +8,7 @@ This repository provides a centralised platform to standardise and enforce GitHu
 
 - Standardise label taxonomy across all repositories
 - Safely migrate legacy labels to the taxonomy
-- Enforce consistency continuously via a weekly scheduled run
+- Enforce consistency with optional weekly scheduled runs
 - Guarantee every issue and open PR has at minimum one type and one priority label
 
 ---
@@ -30,7 +30,7 @@ This repository provides a centralised platform to standardise and enforce GitHu
 |---|---|
 | **type** | `type: bug`, `type: docs`, `type: feature`, `type: task` |
 | **priority** | `priority: high`, `priority: medium`, `priority: low` |
-| **flag** | `flag: blocked`, `flag: duplicate`, `flag: invalid`, `flag: rework`, `flag: wontfix` |
+| **flag** | `flag: rework`, `flag: blocked`, `flag: duplicate`, `flag: invalid`, `flag: wontfix` |
 
 ---
 
@@ -92,7 +92,9 @@ This repository provides a centralised platform to standardise and enforce GitHu
 
 ## Scheduled Enforcement
 
-The workflow runs automatically every **Monday at 03:00 UTC** in `enforce` mode across all app-accessible repositories with `dry_run=false` whenever the cron lines are enabled on the default branch.
+Scheduled enforcement is currently paused in this branch because the cron lines are commented out in `.github/workflows/label-taxonomy.yml`.
+
+When enabled, the workflow runs automatically every **Monday at 03:00 UTC** in `enforce` mode across all app-accessible repositories with `dry_run=false`.
 
 This is independent of manual runs. Running step 7 above does not enable schedule; schedule is already active whenever cron is enabled.
 
