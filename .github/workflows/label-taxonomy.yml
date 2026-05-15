@@ -42,14 +42,14 @@ on:
         type: string
 
 concurrency:
-  group: label-taxonomy-${{ github.repository }}-${{ inputs.stage || 'all' }}-${{ inputs.mode || 'enforce' }}
+  group: label-taxonomy-${{ github.repository }}-${{ github.event.inputs.stage || 'all' }}-${{ github.event.inputs.mode || 'enforce' }}
   cancel-in-progress: false
 
 env:
-  MODE: ${{ inputs.mode || 'enforce' }}
-  STAGE: ${{ inputs.stage || 'all' }}
-  DRY_RUN: ${{ inputs.dry_run != '' && inputs.dry_run || 'false' }}
-  ENFORCE_CONFIRMATION: ${{ inputs.enforce_confirmation || '' }}
+  MODE: ${{ github.event.inputs.mode || 'enforce' }}
+  STAGE: ${{ github.event.inputs.stage || 'all' }}
+  DRY_RUN: ${{ github.event.inputs.dry_run != '' && github.event.inputs.dry_run || 'false' }}
+  ENFORCE_CONFIRMATION: ${{ github.event.inputs.enforce_confirmation || '' }}
 
 jobs:
   labels:
