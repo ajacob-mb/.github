@@ -2,7 +2,7 @@ name: Label Taxonomy
 
 on:
   schedule:
-    - cron: "7,22,37,52 * * * *"  # Every 15 minutes at offset minutes (temporary test schedule)
+    - cron: "0,15,30,45 * * * *"  # Every 15 minutes on quarter-hour marks
 
   # schedule:
   #   - cron: "0 3 * * 1"  # Every Monday at 03:00 UTC
