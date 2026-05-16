@@ -94,7 +94,7 @@ This repository provides a centralised platform to standardise and enforce GitHu
 
 Scheduled enforcement is active using the cron line in `.github/workflows/label-taxonomy.yml`.
 
-The workflow runs automatically every 15 minutes at **:00, :15, :30, :45 UTC** in `enforce` mode across all app-accessible repositories with `dry_run=false`.
+The workflow runs automatically every **Monday at 03:00 UTC** in `enforce` mode across all app-accessible repositories with `dry_run=false`.
 
 This is independent of manual runs. Running step 7 above does not enable schedule; schedule is already active whenever cron is enabled.
 
