@@ -71,7 +71,7 @@ body:
           And …
     validations:
       required: true
-  - type: input
+  - type: textarea
     id: environment
     attributes:
       label: Environment

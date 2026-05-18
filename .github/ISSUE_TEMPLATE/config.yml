@@ -1,6 +1,6 @@
 blank_issues_enabled: false
 contact_links:
-  - name: GitHub Issues Standard
+  - name: GitHub Issues Standard - Policy
     url: https://mauriceblackburn.atlassian.net/wiki/x/DAA_Rg
     about: Label taxonomy, issue templates, branch naming, and PR conventions.
   - name: BA Roadmap
