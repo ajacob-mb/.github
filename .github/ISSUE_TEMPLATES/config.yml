@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Issues Standard
+    url: https://mauriceblackburn.atlassian.net/wiki/x/DAA_Rg
+    about: Label taxonomy, issue templates, branch naming, and PR conventions.
+  - name: BA Roadmap
+    url: https://mauriceblackburn.atlassian.net/wiki/x/EYDHQw
+    about: Upstream Jira workflow, sign-off gates, and the JIRA–GitHub linking convention.

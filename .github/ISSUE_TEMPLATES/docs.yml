@@ -1,0 +1,110 @@
+name: "[Docs] Documentation Change"
+description: An improvement, correction, or addition to documentation. Standalone — no bug or feature required.
+title: "Verbatim JIRA Title"
+labels:
+  - "type: docs"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Before you start**
+        - Use this template when the work is purely documentary — including documenting undocumented legacy systems.
+        - The title field above is a placeholder — replace it with the verbatim Jira subtask summary.
+        - The first line in the issue body must be `Implements JIRA-[subtask-id]`.
+        - After submitting, add one `priority:` label and assign the correct milestone (e.g. `v1.2.0`).
+  - type: input
+    id: jira-link
+    attributes:
+      label: Jira Subtask
+      description: "Append digits only (for example, 142) so the value is Implements JIRA-DST-142."
+      value: "Implements JIRA-DST-"
+      placeholder: "142"
+    validations:
+      required: true
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type
+      options:
+        - New documentation
+        - Update to existing documentation
+        - Correction / erratum
+        - Onboarding / process material
+    validations:
+      required: true
+  - type: textarea
+    id: target
+    attributes:
+      label: What is Being Documented
+      description: The system, feature, or process the documentation covers.
+    validations:
+      required: true
+  - type: textarea
+    id: audience
+    attributes:
+      label: Audience
+      description: Who is this documentation for? (e.g. new developers, end users, BAs, ops.)
+    validations:
+      required: true
+  - type: textarea
+    id: location
+    attributes:
+      label: Location
+      description: Where will this live? (e.g. repo README, Confluence path, inline code comments.)
+    validations:
+      required: true
+  - type: textarea
+    id: outline
+    attributes:
+      label: Content Outline
+      description: Bullet outline of sections to be produced or updated.
+      placeholder: |
+        - Overview
+        - Setup
+        - Troubleshooting
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria (Gherkin)
+      description: Minimum two scenarios - one happy path and one error/edge case.
+      placeholder: |
+        Scenario: Happy path - documentation published
+          Given ...
+          When ...
+          Then ...
+          And ...
+
+        Scenario: Error / edge case - ...
+          Given ...
+          When ...
+          Then ...
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope, Assumptions & Dependencies
+      placeholder: |
+        **Out of scope:**
+        - 
+
+        **Assumptions:**
+        - 
+
+        **Dependencies (source material, SME availability):**
+        - 
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Submission Checklist
+      options:
+        - label: The title above matches the Jira subtask summary verbatim.
+          required: true
+        - label: I will add one `priority:` label immediately after creation.
+          required: true
+        - label: I will assign this issue to the correct milestone (e.g. `v1.2.0`).
+          required: true

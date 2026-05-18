@@ -1,0 +1,105 @@
+name: "[Feature] New Functionality or Enhancement"
+description: Request new functionality or a meaningful enhancement to existing behaviour.
+title: "Verbatim JIRA Title"
+labels:
+  - "type: feature"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Before you start**
+        - This template is for work that originates from a Jira subtask with BA sign-off.
+        - The title field above is a placeholder — replace it with the verbatim Jira subtask summary.
+        - The first line in the issue body must be `Implements JIRA-[subtask-id]`.
+        - After submitting, add one `priority:` label and assign the correct milestone (e.g. `v1.2.0`).
+  - type: input
+    id: jira-link
+    attributes:
+      label: Jira Subtask
+      description: "Append digits only (for example, 142) so the value is Implements JIRA-DST-142."
+      value: "Implements JIRA-DST-"
+      placeholder: "142"
+    validations:
+      required: true
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User Story
+      description: Per BA Roadmap §3.2. Copy verbatim from the Jira subtask.
+      placeholder: |
+        As a [persona / type of user]
+        I want [goal or action]
+        So that [business value or outcome]
+    validations:
+      required: true
+  - type: textarea
+    id: background
+    attributes:
+      label: Background / context
+      description: Why this is being delivered in this version. One short paragraph.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria (Gherkin)
+      description: Minimum two scenarios — one happy path and one error/edge case. Per BA Roadmap §3.2.
+      placeholder: |
+        Scenario: Happy path — feature delivered
+          Given …
+          When …
+          Then …
+          And …
+
+        Scenario: Error / edge case — …
+          Given …
+          When …
+          Then …
+          And …
+    validations:
+      required: true
+  - type: textarea
+    id: nfr
+    attributes:
+      label: Non-functional Requirements
+      description: Complete every category. Write "N/A" where genuinely not applicable.
+      placeholder: |
+        - Performance: 
+        - Security: 
+        - Accessibility: 
+        - Browser / device support: 
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope, Assumptions & Dependencies
+      placeholder: |
+        **Out of scope:**
+        - 
+
+        **Assumptions:**
+        - 
+
+        **Dependencies (Jira ID or GitHub issue #):**
+        - 
+    validations:
+      required: true
+  - type: textarea
+    id: design
+    attributes:
+      label: Design / UX References
+      description: Link to Figma, Confluence page, or process flow diagram. Write "N/A" if not applicable.
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Submission Checklist
+      options:
+        - label: The title above matches the Jira subtask summary verbatim.
+          required: true
+        - label: I will add one `priority:` label immediately after creation.
+          required: true
+        - label: I will assign this issue to the correct milestone (e.g. `v1.2.0`).
+          required: true

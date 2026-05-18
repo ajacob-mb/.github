@@ -1,0 +1,93 @@
+name: "[Task] Chore, Infrastructure, or Administrative Work"
+description: General work item that is neither a bug fix nor a feature addition (e.g. refactor, dependency bump, configuration).
+title: "Verbatim JIRA Title"
+labels:
+  - "type: task"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Before you start**
+        - Use this template for infrastructure, configuration, refactoring, or process work.
+        - The title field above is a placeholder — replace it with the verbatim Jira subtask summary.
+        - The first line in the issue body must be `Implements JIRA-[subtask-id]`.
+        - After submitting, add one `priority:` label and assign the correct milestone (e.g. `v1.2.0`).
+  - type: input
+    id: jira-link
+    attributes:
+      label: Jira Subtask
+      description: "Append digits only (for example, 142) so the value is Implements JIRA-DST-142."
+      value: "Implements JIRA-DST-"
+      placeholder: "142"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What needs to be done and why. Be concrete — include commands, file paths, or versions where relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Expected Outcome
+      description: How will we know this task is complete? Describe the observable end state.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria (Gherkin)
+      description: Minimum two scenarios - one happy path and one error/edge case.
+      placeholder: |
+        Scenario: Happy path - task complete
+          Given ...
+          When ...
+          Then ...
+          And ...
+
+        Scenario: Error / edge case - ...
+          Given ...
+          When ...
+          Then ...
+    validations:
+      required: true
+  - type: textarea
+    id: nfr
+    attributes:
+      label: Non-functional Considerations
+      description: Call out any Performance, Security, Accessibility, or Browser/device impact. Write "N/A" if none.
+      placeholder: |
+        - Performance: 
+        - Security: 
+        - Accessibility: 
+        - Browser / device support: 
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope, Assumptions & Dependencies
+      placeholder: |
+        **Out of scope:**
+        - 
+
+        **Assumptions:**
+        - 
+
+        **Dependencies:**
+        - 
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Submission Checklist
+      options:
+        - label: The title above matches the Jira subtask summary verbatim.
+          required: true
+        - label: I will add one `priority:` label immediately after creation.
+          required: true
+        - label: I will assign this issue to the correct milestone (e.g. `v1.2.0`).
+          required: true

@@ -1,0 +1,118 @@
+name: "[Bug] Defect Report"
+description: Report a defect or unintended behaviour in existing functionality.
+title: "Verbatim JIRA Title"
+labels:
+  - "type: bug"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Before you start**
+        - Confirm the Jira subtask exists and has BA sign-off.
+        - The title field above is a placeholder — replace it with the verbatim Jira subtask summary.
+        - The first line in the issue body must be `Implements JIRA-[subtask-id]`.
+        - After submitting, add one `priority:` label and assign the correct milestone (e.g. `v1.2.0`).
+  - type: input
+    id: jira-link
+    attributes:
+      label: Jira Subtask
+      description: "Append digits only (for example, 142) so the value is Implements JIRA-DST-142."
+      value: "Implements JIRA-DST-"
+      placeholder: "142"
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One or two sentences describing the defect and its impact.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Numbered steps a developer can follow to reproduce the behaviour.
+      placeholder: |
+        1. Navigate to …
+        2. Click …
+        3. Observe …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behaviour
+      description: Include error messages, stack traces, or screenshots where available.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria (Gherkin)
+      description: Minimum two scenarios — one happy path (fix verified) and one error/edge case. Per BA Roadmap §3.2.
+      placeholder: |
+        Scenario: Happy path — fix verified
+          Given …
+          When …
+          Then …
+          And …
+
+        Scenario: Error / edge case — …
+          Given …
+          When …
+          Then …
+          And …
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, OS, app version, and environment (e.g. Chrome 124 on Windows 11, staging v1.1.3).
+    validations:
+      required: true
+  - type: textarea
+    id: nfr
+    attributes:
+      label: Non-functional Considerations
+      description: Call out any Performance, Security, Accessibility, or Browser/device concerns introduced by the fix. Write "N/A" if none.
+      placeholder: |
+        - Performance: 
+        - Security: 
+        - Accessibility: 
+        - Browser / device support: 
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope, Assumptions & Dependencies
+      placeholder: |
+        **Out of scope:**
+        - 
+
+        **Assumptions:**
+        - 
+
+        **Dependencies:**
+        - 
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Submission Checklist
+      options:
+        - label: The title above matches the Jira subtask summary verbatim.
+          required: true
+        - label: I will add one `priority:` label immediately after creation.
+          required: true
+        - label: I will assign this issue to the correct milestone (e.g. `v1.2.0`).
+          required: true
